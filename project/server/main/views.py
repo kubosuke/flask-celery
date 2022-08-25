@@ -18,7 +18,7 @@ def home():
 def run_task():
     content = request.json
     task_type = content["type"]
-    task = create_task.delay(int(task_type))
+    task = create_task.apply_async(args=[int(task_type)], task_id=f"task.{task_type}")
     return jsonify({"task_id": task.id}), 202
 
 
