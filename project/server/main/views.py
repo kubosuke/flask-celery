@@ -3,8 +3,7 @@
 from celery.result import AsyncResult
 from flask import render_template, Blueprint, jsonify, request
 
-from project.server.tasks import create_task
-
+from project.server.tasks import damage_control
 
 main_blueprint = Blueprint("main", __name__,)
 
@@ -17,9 +16,11 @@ def home():
 @main_blueprint.route("/tasks", methods=["POST"])
 def run_task():
     content = request.json
-    task_type = content["type"]
-    task = create_task.apply_async(args=[int(task_type)], task_id=f"task.{task_type}")
-    return jsonify({"task_id": task.id}), 202
+    name = content["name"]
+    id = content["id"]
+
+    res = damage_control.delay(id, name).get()
+    return jsonify({"data": res}), 202
 
 
 @main_blueprint.route("/tasks/<task_id>", methods=["GET"])
