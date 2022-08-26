@@ -1,7 +1,9 @@
 # project/server/main/views.py
 
+from http import HTTPStatus
 from celery.result import AsyncResult
 from flask import render_template, Blueprint, jsonify, request
+from celery_once.tasks import AlreadyQueued
 
 from project.server.tasks import damage_control
 
@@ -19,8 +21,11 @@ def run_task():
     name = content["name"]
     id = content["id"]
 
-    res = damage_control.delay(id, name).get()
-    return jsonify({"data": res}), 202
+    try:
+        res = damage_control.delay(id, name).get()
+    except AlreadyQueued:
+        return jsonify({"status": "same job running"}), HTTPStatus.ACCEPTED
+    return jsonify({"status": "queued"}), HTTPStatus.CREATED
 
 
 @main_blueprint.route("/tasks/<task_id>", methods=["GET"])
